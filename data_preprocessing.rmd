@@ -1,0 +1,119 @@
+## Install packages
+```{r}
+install.packages("caret")
+install.packages("keras")
+install.packages('tensorflow')
+install.packages("fastDummies")
+```
+
+## Load Library
+```{r}
+library(caret)
+library(keras)
+library(tensorflow)
+library(fastDummies)
+```
+## Load data
+```{r}
+data <- read.csv('/Users/hugo/Downloads/heart.csv')
+head(data)
+```
+
+## Find mean, std value for numerical data
+```{r}
+# Identify numerical columns
+numerical_columns <- c("Age", "RestingBP", "Cholesterol",
+                       "FastingBS", "MaxHR", "Oldpeak")
+
+# Calculate mean for each numerical column
+numerical_means <- sapply(data[numerical_columns], mean, na.rm = TRUE)
+
+# Calculate standard deviation for each numerical column
+numerical_sds <- sapply(data[numerical_columns], sd, na.rm = TRUE)
+```
+```{r}
+# Print the means and standard deviations
+numerical_means
+numerical_sds
+```
+## Dataset Preprocessing and Split data
+```{r}
+# Assuming 'data' is already loaded
+# Convert factors to numeric if not done already
+data$Sex <- as.factor(data$Sex)
+data$ChestPainType <- as.factor(data$ChestPainType)
+data$RestingECG <- as.factor(data$RestingECG)
+data$ExerciseAngina <- as.factor(data$ExerciseAngina)
+data$ST_Slope <- as.factor(data$ST_Slope)
+
+# Identify numerical columns
+numerical_columns <- c("Age", "RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak")
+
+# Scale numerical features (standardise)
+data[numerical_columns] <- scale(data[numerical_columns])
+
+categorical_columns <- c("Sex", "ChestPainType", "RestingECG", "ExerciseAngina", "ST_Slope") # Adjust based on your actual categorical columns
+# Apply one-hot encoding
+data <- fastDummies::dummy_cols(data, select_columns = categorical_columns, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+
+# We use model.matrix to encode categorical variables and exclude the intercept
+# Separate features and target variable
+features <- data[, !(names(data) %in% c("HeartDisease"))]
+target <- data$HeartDisease
+
+# Split the dataset into training and testing sets
+set.seed(123) # Ensure reproducibility
+split <- createDataPartition(target, p = 0.8, list = FALSE)
+x_train <- features[split, ]
+y_train <- target[split]
+
+x_test <- features[-split, ]
+y_test <- target[-split]
+
+x_train <- as.matrix(x_train)
+x_test <- as.matrix(x_test)
+``` 
+
+## Create Neural Network Model 
+```{r}
+library(keras)
+reticulate::py_install("tensorflow")
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = 'relu', input_shape = c(15)) %>%
+  layer_dense(units = 16, activation = 'relu') %>%
+  layer_dense(units = 1, activation = 'sigmoid')
+```
+
+## Model compilation
+```{r}
+model %>% compile(
+  optimizer = 'adam',
+  loss = 'binary_crossentropy',
+  metrics = c('accuracy')
+)
+```
+
+## Train Model 
+```{r}
+history <- model %>% fit(
+  x_train, y_train,
+  epochs = 50,
+  batch_size = 10,
+  validation_split = 0.2
+)
+```
+
+## Evaluate Model 
+```{r}
+model %>% evaluate(x_test, y_test)
+```
+
+## Save model to specific path
+```{r}
+model_path <- '/Users/hugo/cs130/heart_disease/heart_disease_model1.h5'
+save_model_hdf5(model, model_path)
+```
+

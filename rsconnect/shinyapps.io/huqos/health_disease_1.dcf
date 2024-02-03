@@ -1,0 +1,12 @@
+name: health_disease_1
+title: health_disease_1
+username: huqos
+account: huqos
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11118459
+bundleId: 8212784
+url: https://huqos.shinyapps.io/health_disease_1/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
